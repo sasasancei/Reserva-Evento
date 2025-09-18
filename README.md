@@ -43,7 +43,7 @@ O reserva-evento-api consome o evento de pagamento e atualiza o status da reserv
 Pré-requisitos
 Docker e Docker Compose
 
-Java JDK 17+
+Java JDK 21
 
 Maven
 
@@ -65,9 +65,6 @@ cd reserva-evento-api
 mvn clean install
 mvn spring-boot:run
 
-Acesse a documentação das APIs:
-
-Uma vez que os serviços estejam rodando, você pode acessar a documentação OpenAPI/Swagger para testar os endpoints.
 
 🤝 Contribuição
 Contribuições são bem-vindas! Se quiser melhorar o projeto, sinta-se à vontade para abrir uma issue ou um pull request.
