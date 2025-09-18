@@ -24,10 +24,11 @@ import org.slf4j.LoggerFactory;
 public class ReservaService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReservaService.class);
+    private static final BigDecimal CUSTO_POR_ASSENTO = new BigDecimal("100.00");
+    private static final String TOPICO_PAGAMENTOS = "pagamentos.solicitados";
+
     private final ReservaRepository repository;
     private final KafkaTemplate<String, Object> kafka;
-
-    private static final BigDecimal CUSTO_POR_ASSENTO = new BigDecimal("100.00");
 
     public ReservaService(ReservaRepository repository,
                           KafkaTemplate<String, Object> kafka) {
@@ -35,7 +36,7 @@ public class ReservaService {
         this.kafka = kafka;
     }
 
-    private ReservaEntity toEntity(ReservaCriadaEvent event, BigDecimal valor) {
+    private static ReservaEntity toEntity(ReservaCriadaEvent event, BigDecimal valor) {
         ReservaEntity entity = new ReservaEntity();
         entity.setId(event.getId());
         entity.setEmail(event.getEmail());
@@ -48,6 +49,9 @@ public class ReservaService {
 
     // --------------------------------------------------------------------------
 
+    /**
+     * Processa o evento de Reserva Criada e inicia o fluxo de pagamento.
+     */
     @Transactional
     public void processarReserva(ReservaCriadaEvent event) {
         LOGGER.info("Processando evento de Reserva Criada para ID: {}", event.getId());
@@ -72,15 +76,11 @@ public class ReservaService {
                 valorTotal
         );
 
-        kafka.send("pagamentos.solicitados", event.getId(), pagamentoEvent);
+        kafka.send(TOPICO_PAGAMENTOS, event.getId(), pagamentoEvent);
         LOGGER.info("Evento de Pagamento Solicitado enviado para o Kafka para ID: {}", event.getId());
     }
 
-    /**
-     * Confirma uma reserva após a aprovação do pagamento.
-     * Este é um método de compensação na Saga, ativado por um evento do Kafka.
-     * @param event O evento de aprovação do pagamento.
-     */
+    // Métodos confirmarReserva e cancelarReserva
     @Transactional
     public void confirmarReserva(PagamentoAprovadoEvent event) {
         LOGGER.info("Confirmando reserva para ID: {}", event.reservaId());
@@ -96,11 +96,6 @@ public class ReservaService {
         }
     }
 
-    /**
-     * Cancela uma reserva após a rejeição do pagamento.
-     * Este é um método de compensação na Saga, ativado por um evento do Kafka.
-     * @param event O evento de rejeição do pagamento.
-     */
     @Transactional
     public void cancelarReserva(PagamentoRejeitadoEvent event) {
         LOGGER.warn("Cancelando reserva para ID: {}", event.reservaId());

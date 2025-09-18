@@ -1,66 +1,73 @@
-Projeto de Orquestração de Reservas
-Este repositório contém uma aplicação modular para gerenciamento de reservas de eventos, construída com uma arquitetura de microsserviços. O projeto utiliza Spring Boot para os serviços, Kafka para comunicação assíncrona, e Docker para orquestração em um ambiente de desenvolvimento.
+Reserva Evento
+Uma plataforma completa de gestão de reservas de eventos, construída com uma arquitetura de microsserviços, seguindo os princípios de Domain-Driven Design (DDD) e Arquitetura Hexagonal. O projeto utiliza Kafka para garantir uma comunicação assíncrona e resiliente entre os serviços.
 
-A arquitetura do projeto é dividida em serviços especializados, garantindo a separação de responsabilidades e a escalabilidade.
+🚀 Tecnologias Utilizadas
+Este projeto é um exemplo de arquitetura moderna e escalável, utilizando as seguintes tecnologias:
 
-Arquitetura do Projeto
-O sistema é composto pelos seguintes microsserviços:
+Linguagem: Java 21
 
-reserva-evento-api: O serviço principal responsável por gerenciar a lógica de negócio das reservas. Ele publica eventos no Kafka quando uma reserva é criada e consome eventos de outros serviços para atualizar o seu estado.
+Framework: Spring Boot
 
-pagamento-api: Um serviço especializado em processar pagamentos. Ele consome eventos de solicitação de pagamento e, após o processamento, publica eventos de confirmação ou falha.
+Orquestração de Containers: Docker e Docker Compose
 
-bff (Backend for Frontend): Atua como uma camada de agregação para a interface do usuário. Ele simplifica a comunicação do frontend, orquestrando chamadas a outros microsserviços e retornando uma resposta consolidada.
+Mensageria: Apache Kafka
 
-common-lib: Uma biblioteca compartilhada que contém classes e utilitários comuns a todos os serviços, como DTOs e eventos, garantindo a consistência do contrato de comunicação.
+Banco de Dados: H2 (para desenvolvimento)
 
-A comunicação entre os microsserviços é totalmente assíncrona, utilizando uma Saga de Coreografia onde cada serviço reage a eventos relevantes, mantendo o sistema robusto e desacoplado.
+API: REST com validação de contrato
 
-Tecnologias Utilizadas
-Java 17+: Linguagem de programação principal.
+Outros: Maven, Swagger/OpenAPI 3.0
 
-Spring Boot: Framework para a construção de serviços REST e de processamento de eventos.
+🏛️ Arquitetura do Projeto
+A arquitetura do projeto é baseada em microsserviços, com a comunicação desacoplada via Kafka. Adotamos a Arquitetura Hexagonal para isolar a lógica de negócio das tecnologias externas, garantindo um design flexível e fácil de testar.
 
-Apache Maven: Ferramenta para automação de construção e gerenciamento de dependências.
+Microsserviços
+reserva-evento-api: O core do sistema. Contém a lógica de domínio para criar e gerenciar reservas. Atua como um produtor e consumidor de eventos do Kafka, participando de uma Saga de Coreografia para confirmar ou cancelar reservas com base no status do pagamento.
 
-Apache Kafka: Plataforma de streaming de eventos para a comunicação entre os serviços.
+pagamento-api: O microsserviço especializado em processar pagamentos. Ele escuta eventos de PagamentoSolicitado e, após o processamento, envia um novo evento de PagamentoAprovado ou PagamentoRejeitado para o Kafka.
 
-Docker: Utilizado para criar um ambiente de desenvolvimento isolado, com containers para o Kafka e o Zookeeper.
+bff (Backend for Frontend): Atua como uma camada de agregação para o frontend. Simplifica as chamadas da UI, orquestrando requisições para os microsserviços de backend. O BFF também implementa padrões de resiliência, como Circuit Breaker e Retry, para proteger o sistema contra falhas temporárias.
 
-GitHub Actions: Ferramenta de CI/CD para automação de build, testes e deploy (conforme evidenciado pela pasta .github/workflows/).
+Diagrama de Fluxo de Mensagens (Saga)
+Um novo evento de reserva é criado no reserva-evento-api.
 
-Como Rodar o Projeto Localmente
-Siga estas instruções para colocar o projeto em execução em seu ambiente de desenvolvimento.
+O reserva-evento-api envia um evento PagamentoSolicitado para o tópico do Kafka.
 
+O pagamento-api consome o evento PagamentoSolicitado.
+
+O pagamento-api processa o pagamento e envia um evento PagamentoAprovado ou PagamentoRejeitado de volta para o Kafka.
+
+O reserva-evento-api consome o evento de pagamento e atualiza o status da reserva para CONFIRMADA ou CANCELADA.
+
+⚙️ Como Rodar o Projeto
 Pré-requisitos
-Java Development Kit (JDK) 17+
-
-Apache Maven
-
 Docker e Docker Compose
 
-1. Iniciar a Infraestrutura
-Navegue até o diretório raiz do projeto e use o Docker Compose para iniciar o Kafka e o Zookeeper.
+Java JDK 17+
+
+Maven
+
+Passo a Passo
+Inicie os serviços de infraestrutura:
+
+No diretório onde está o docker-compose.yml, execute:
 
 docker-compose up -d
 
-2. Construir e Executar os Serviços
-Para cada microsserviço (ex: reserva-evento-api, pagamento-api, bff), navegue até seu respectivo diretório e execute os comandos:
+Isso iniciará o Kafka, Zookeeper e o Redis.
 
-# Exemplo para o serviço de reserva
+Construa e execute os microsserviços:
+
+Em cada pasta de serviço (reserva-evento-api, pagamento-api, bff), use o Maven para construir e executar a aplicação:
+
+# Exemplo com o reserva-evento-api
 cd reserva-evento-api
-mvn clean package -DskipTests
-java -jar target/reserva-evento-api-*.jar
+mvn clean install
+mvn spring-boot:run
 
-Você também pode usar o seu ambiente de desenvolvimento (IDE) para executar os serviços.
+Acesse a documentação das APIs:
 
-Fluxo de Eventos (Exemplo da Saga)
-Um novo evento de reserva é iniciado através do bff ou diretamente do reserva-evento-api.
+Uma vez que os serviços estejam rodando, você pode acessar a documentação OpenAPI/Swagger para testar os endpoints.
 
-O reserva-evento-api persiste a reserva com status "pendente" e publica um evento ReservaCriadaEvent no tópico do Kafka.
-
-O pagamento-api consome o evento ReservaCriadaEvent e inicia o processamento do pagamento.
-
-Após o processamento, o pagamento-api publica um evento PagamentoAprovadoEvent ou PagamentoRejeitadoEvent no Kafka.
-
-O reserva-evento-api consome o evento de pagamento e atualiza o status da reserva no banco de dados para "confirmada" ou "cancelada".
+🤝 Contribuição
+Contribuições são bem-vindas! Se quiser melhorar o projeto, sinta-se à vontade para abrir uma issue ou um pull request.

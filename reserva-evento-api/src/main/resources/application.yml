@@ -1,7 +1,7 @@
-  server:
+server:
   port: 8080
-  spring:
-    application:
+spring:
+  application:
     name: reserva-evento-service
   datasource:
     url: jdbc:h2:mem:reservadb;DB_CLOSE_DELAY=-1
@@ -10,25 +10,29 @@
     password:
   jpa:
     hibernate:
-    ddl-auto: update
-    show-sql: true
-  kafka:
-    bootstrap-servers: localhost:9092 # Endereço do seu servidor Kafka
-    # Configurações do Produtor (para enviar mensagens)
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      acks: all
-      retries: 3
+      ddl-auto: update
+      show-sql: true
+  # Configuração de Cache e Redis
+  cache:
+    type: redis
+    redis:
+      timeout: 10000ms
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
-    # Configurações do Consumidor (para receber mensagens)
-    consumer:
-      group-id: reservas-group # Identificador para este grupo de consumidores
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-    # Configurações do Listener (para o @KafkaListener)
-    listener:
-      missing-topics-fatal: false # Permite que a aplicação inicie mesmo se o tópico não existir
-
+kafka:
+  bootstrap-servers: localhost:9092
+  producer:
+    key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    acks: all
+    retries: 3
+  consumer:
+    group-id: reservas-group
+    auto-offset-reset: earliest
+    key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  listener:
+    missing-topics-fatal: false

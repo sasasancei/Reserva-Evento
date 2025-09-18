@@ -1,6 +1,8 @@
 package com.exemplo.bff.controller;
 
 import com.exemplo.common.dto.ReservaViewModel;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,15 +34,21 @@ public class ReservaBFFController {
                     @ApiResponse(responseCode = "200", description = "Listagem de reservas realizada com sucesso"),
                     @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
             })
+    @CircuitBreaker(name = "reserva-api", fallbackMethod = "fallbackGetReservas")
+    @Retry(name = "reserva-api")
     public ResponseEntity<List<ReservaViewModel>> getReservas() {
-        try {
-            // Chama o serviço de domínio para obter a lista de reservas
-            String apiUrl = "http://localhost:8080/v1/reservas";
-            ReservaViewModel[] reservas = restTemplate.getForObject(apiUrl, ReservaViewModel[].class);
-            return ResponseEntity.ok(Arrays.asList(reservas));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
-        }
+        // Chamada para o serviço de domínio que agora será protegida
+        String apiUrl = "http://localhost:8080/v1/reservas";
+        ReservaViewModel[] reservas = restTemplate.getForObject(apiUrl, ReservaViewModel[].class);
+        return ResponseEntity.ok(Arrays.asList(reservas));
+    }
+
+    /**
+     * Método de fallback para lidar com falhas na chamada à API de reservas.
+     * Retorna uma lista vazia ou uma mensagem de erro controlada.
+     */
+    public ResponseEntity<List<ReservaViewModel>> fallbackGetReservas(Throwable t) {
+        System.err.println("Falha ao chamar a API de reservas. Retornando fallback. Erro: " + t.getMessage());
+        return ResponseEntity.status(503).body(Collections.emptyList());
     }
 }
